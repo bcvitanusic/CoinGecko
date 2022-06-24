@@ -63,6 +63,7 @@ export const Home = () => {
     fetchItems();
   }, []);
 
+  // fetching from the coingecko api/markets
   const fetchItems = async (per_page = 10, page = 1) => {
     let data = [];
     if (!render.loading) {
@@ -85,6 +86,7 @@ export const Home = () => {
     }
   };
 
+  //fetching individual item for showing
   const fetchOneItem = async (id: string) => {
     setOverlayVisible(true);
     setCoinItem({loading: true, itemData: undefined, error: false});
