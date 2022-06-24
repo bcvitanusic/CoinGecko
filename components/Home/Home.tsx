@@ -11,6 +11,7 @@ import {
 import React, {useEffect, useState} from 'react';
 import CoinItem, {ICoinItem, rowItem} from '../CoinItem/CoinItem';
 import {Overlay} from 'react-native-elements';
+import Error from '../Error';
 
 export const appColors = {
   white: '#fefdff',
@@ -33,9 +34,11 @@ export const Home = () => {
   const [coinItem, setCoinItem] = useState<{
     itemData?: ICoinItemData;
     loading: boolean;
+    error: boolean;
   }>({
     itemData: undefined,
     loading: false,
+    error: false,
   });
   const [overlayVisible, setOverlayVisible] = useState<boolean>(false);
   const [pageData, setPageData] = useState<{
@@ -84,24 +87,35 @@ export const Home = () => {
 
   const fetchOneItem = async (id: string) => {
     setOverlayVisible(true);
-    setCoinItem({loading: true, itemData: undefined});
-    let fetchData = await fetch(`https://api.coingecko.com/api/v3/coins/${id}`);
-    let data = await fetchData.json();
+    setCoinItem({loading: true, itemData: undefined, error: false});
+    try {
+      let fetchData = await fetch(
+        `https://api.coingecko.com/api/v3/coins/${id}`,
+      );
+      let data = await fetchData.json();
 
-    let coin = {
-      name: data.name,
-      symbol: data.symbol,
-      hashing_algorithm: data.hashing_algorithm,
-      description: data.description.en,
-      genesis_date: data.genesis_date,
-      homepage: data.links.homepage[0],
-      market_cap_euro: data.market_data.market_cap.eur,
-    };
+      let coin = {
+        name: data.name,
+        symbol: data.symbol,
+        hashing_algorithm: data.hashing_algorithm,
+        description: data.description.en,
+        genesis_date: data.genesis_date,
+        homepage: data.links.homepage[0],
+        market_cap_euro: data.market_data.market_cap.eur,
+      };
 
-    setCoinItem({
-      itemData: coin,
-      loading: false,
-    });
+      setCoinItem({
+        itemData: coin,
+        loading: false,
+        error: false,
+      });
+    } catch (error) {
+      setCoinItem({
+        itemData: undefined,
+        loading: false,
+        error: true,
+      });
+    }
   };
 
   const CoinItemOne = (title: string, data?: string | number) => {
@@ -167,27 +181,33 @@ export const Home = () => {
           overlayStyle={styles.overlay}
           isVisible={overlayVisible}
           onBackdropPress={() => setOverlayVisible(false)}>
-          {coinItem.itemData === undefined && <ActivityIndicator />}
+          {coinItem.itemData === undefined && !coinItem.error && (
+            <ActivityIndicator />
+          )}
           {coinItem.itemData !== undefined && (
             <View style={styles.scrollViewContainer}>
-              <ScrollView style={styles.sw}>
-                {CoinItemOne('Name', coinItem.itemData?.name)}
-                {CoinItemOne('Symbol', coinItem.itemData?.symbol)}
-                {CoinItemOne(
-                  'Hashing algorithm',
-                  coinItem.itemData?.hashing_algorithm,
-                )}
+              {coinItem.error && <Error />}
+              {!coinItem.error && (
+                <ScrollView style={styles.sw}>
+                  {CoinItemOne('Name', coinItem.itemData?.name)}
+                  {CoinItemOne('Symbol', coinItem.itemData?.symbol)}
+                  {CoinItemOne(
+                    'Hashing algorithm',
+                    coinItem.itemData?.hashing_algorithm,
+                  )}
 
-                {CoinItemOne(
-                  'EUR market cap',
-                  coinItem.itemData?.market_cap_euro,
-                )}
-                {CoinItemOne('Homepage', coinItem.itemData?.homepage)}
-                {CoinItemOne('Genesis date', coinItem.itemData?.genesis_date)}
-                {CoinItemOne('Description', coinItem.itemData?.description)}
-              </ScrollView>
+                  {CoinItemOne(
+                    'EUR market cap',
+                    coinItem.itemData?.market_cap_euro,
+                  )}
+                  {CoinItemOne('Homepage', coinItem.itemData?.homepage)}
+                  {CoinItemOne('Genesis date', coinItem.itemData?.genesis_date)}
+                  {CoinItemOne('Description', coinItem.itemData?.description)}
+                </ScrollView>
+              )}
             </View>
           )}
+          {coinItem.error && <Error />}
         </Overlay>
       </View>
 
@@ -208,11 +228,7 @@ export const Home = () => {
         )}
       </TouchableOpacity>
 
-      {render.error && (
-        <View style={styles.error}>
-          <Text>Error loading data</Text>
-        </View>
-      )}
+      {render.error && <Error />}
     </View>
   );
 };
